@@ -1,0 +1,4 @@
+spam
+*.o
+spam-trace.c
+spam-trace.h

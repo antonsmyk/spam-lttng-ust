@@ -1,0 +1,8 @@
+The spam-lttng-ust utility -- a simple program generating specified number of
+LTTng-UST tracing events per second. Currently only simple spam:dummy_event is
+generated.
+
+This software is distributed under MIT license. See LICENSE file for details.
+
+This project uses lttng-get-tp utility and depends on lttng-ust library from
+LTTng-UST project. See http://lttng.org/ for details.
