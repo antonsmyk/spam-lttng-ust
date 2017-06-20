@@ -24,19 +24,18 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <pthread.h>
 #include "spam-trace.h"
 
 #define MILLIARD 1000000000
+#define MAX_THREADS 64
 
-int main(int argc, char **argv) {
-	if (argc != 3) {
-		fprintf(stderr, "Usage: spam <rate per second> <period in seconds>\n");
-		return 1;
-	}
-	const unsigned long events_per_sec = atol(argv[1]);
-	const unsigned long limit_run_sec = atol(argv[2]);
-	printf("Started spamming with %lu trace events per second for %lu seconds...\n",
-			events_per_sec, limit_run_sec);
+static unsigned long events_per_sec;
+static unsigned long limit_run_sec;
+static unsigned num_threads = 1;
+pthread_t threads[MAX_THREADS];
+
+static void * spammer_thread(void *arg __attribute__((unused)) ) {
 	const long sleep_nsec = MILLIARD / events_per_sec;
 	struct timespec start;
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -53,6 +52,39 @@ int main(int argc, char **argv) {
 
 		const struct timespec sleep_ts = { 0, sleep_nsec };
 		nanosleep(&sleep_ts, NULL);
+	}
+	return NULL;
+}
+
+int main(int argc, char **argv) {
+	if (argc <= 3) {
+		fprintf(stderr, "Usage: spam <rate per second> <period in seconds> [number of threads]\n");
+		return 1;
+	}
+	events_per_sec = atol(argv[1]);
+	limit_run_sec = atol(argv[2]);
+	if (argc >= 4)
+		num_threads = atoi(argv[3]);
+	if (num_threads > MAX_THREADS) {
+		fprintf(stderr, "Can't run more than %u threads!\n", MAX_THREADS);
+		return 2;
+	}
+	printf("Started spamming with %lu trace events per second for %lu seconds using %u concurrent threads...\n",
+			events_per_sec, limit_run_sec, num_threads);
+	for (unsigned i = 0; i < num_threads; i++) {
+		int r = pthread_create(&threads[i], NULL, spammer_thread, NULL);
+		if (r != 0) {
+			fprintf(stderr, "Couldn't start thread: %d, %s\n", r, strerror(r));
+			return 3;
+		}
+	}
+	for (unsigned i = 0; i < num_threads; i++) {
+		void *retval = NULL;
+		int r = pthread_join(threads[i], &retval);
+		if (r != 0) {
+			fprintf(stderr, "Couldn't join thread: %d, %s\n", r, strerror(r));
+			/* ignore error */
+		}
 	}
 	printf("Stopped spam!\n");
 }

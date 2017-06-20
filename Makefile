@@ -20,8 +20,8 @@
 # SOFTWARE.
 
 CPPFLAGS := -I.
-CFLAGS := -std=gnu99 -pedantic -Wall -Wextra
-LDFLAGS := -llttng-ust -ldl
+CFLAGS := -std=gnu99 -pedantic -Wall -Wextra -pthread
+LDFLAGS := -llttng-ust -ldl -pthread
 spam: spam.o spam-trace.o
 spam.o: spam-trace.h
 spam-trace.o spam-trace.c spam-trace.h: spam-trace.tp
